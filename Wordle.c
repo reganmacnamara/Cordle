@@ -39,7 +39,6 @@ void clearConsole()
     return;
 }
 
-
 // only matters for windows
 void enableWindowsVirtualTerminal()
 {
@@ -115,10 +114,20 @@ void handleGuess(char *guess, char *word)
     }
 }
 
-void printGuesses()
+void printGuesses(bool withInvalidMessage)
 {
     clearConsole();
-    printf("Guess any 5 letter word to start. You get 5 guesses to win. \n\n\n\n");
+    if (withInvalidMessage)
+    {
+        printf("Guess any 5 letter word to start. You get 5 guesses to win. \n\n");
+        printf(RED "Please guess a valid 5 letter word. \n\n" RESET);
+
+    }
+    else
+    {
+        printf("Guess any 5 letter word to start. You get 5 guesses to win. \n\n\n\n");
+    }
+
     for (int i = 0; i < currentGuess; i++)
     {
         for (int j = 0; j < 5; j++)
@@ -141,7 +150,6 @@ void printGuesses()
     printf("\n");
 }
 
-
 void PlayWordle()
 {
     char input[6] = "";
@@ -150,6 +158,7 @@ void PlayWordle()
     #ifdef _WIN32
       enableWindowsVirtualTerminal();
     #endif
+
     srand(time(NULL));
 
     clearConsole();
@@ -166,20 +175,22 @@ void PlayWordle()
     while(true)
     {
         scanf("%s", input);
-        if (strlen(input) != 5)
+        bool isInvalidGuess = strlen(input) != 5;
+        if (isInvalidGuess)
         {
-            printf(RED "Please guess a valid 5 letter word. \n" RESET);
-            printGuesses();
+            printGuesses(isInvalidGuess);
             continue;
         }
         handleGuess(input, word);
         currentGuess++;
-        printGuesses();
-        if (strcmp(word, input) == 0)
+        printGuesses(isInvalidGuess);
+
+        if (!isInvalidGuess && strcmp(word, input) == 0)
         {
             printf(GREEN "You win in %d %s!\n" RESET, currentGuess, currentGuess == 1 ? "guess" : "guesses");
             break;
         }
+
         if (currentGuess == 6)
         {
             printf(RED "You lose! The word was '%s' \n" RESET, word);

@@ -1,4 +1,6 @@
 #include "Wordle.h"
+#include "Common.h"
+#include "LoadingSpinner.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -33,11 +35,6 @@ typedef struct
 int currentGuess = 0;
 Guess guesses[6];
 
-void clearConsole()
-{
-    printf("\e[1;1H\e[2J");
-    return;
-}
 
 // only matters for windows
 void enableWindowsVirtualTerminal()
@@ -152,6 +149,7 @@ void printGuesses(bool withInvalidMessage)
 
 void PlayWordle()
 {
+    StartSpinner();
     char input[6] = "";
     char word[6] = "";
 
@@ -161,9 +159,11 @@ void PlayWordle()
 
     srand(time(NULL));
 
+    getWordFromFile(word);
+
+    StopSpinner();
     clearConsole();
 
-    getWordFromFile(word);
     if (strlen(word) != 5)
     {
         printf(RED "Error: could not generate word.\n" RESET);

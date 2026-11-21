@@ -186,11 +186,18 @@ void PlayWordle()
 
     srand(time(NULL));
 
-    loadWords();
-    strcpy(word, words[rand() % wordCount]);
+    bool loaded = loadWords();
 
     StopSpinner();
     clearConsole();
+
+    if (!loaded)
+    {
+        printf(RED "Error: unable to load words.\n" RESET);
+        return;
+    }
+
+    strcpy(word, words[rand() % wordCount]);
 
     if (strlen(word) != 5)
     {

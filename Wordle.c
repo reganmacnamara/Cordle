@@ -11,6 +11,8 @@
 #include <windows.h>
 #endif
 
+#define WORD_LEN 5
+
 // ANSI Colour Codes
 #define RESET   "\033[0m"
 #define RED     "\033[31m"
@@ -34,7 +36,13 @@ typedef struct
 
 int currentGuess = 0;
 Guess guesses[6];
+char (*words)[WORD_LEN + 1] = NULL;
+size_t wordCount =0;
 
+int compareWords(const void *a, const void *b)
+{
+    return strcmp(a, b);
+}
 
 // only matters for windows
 void enableWindowsVirtualTerminal()
@@ -47,33 +55,52 @@ void enableWindowsVirtualTerminal()
     #endif
 }
 
-void getWordFromFile(char *wordBuffer)
+bool isValidWord(const char *guess)
 {
-    char buffer[256];
-    int currentLine = 0;
-    FILE *filePrt;
-    int targetLine = rand() % 14855;
+    return bsearch(guess, words, wordCount, sizeof *words, compareWords) != NULL;
+}
 
-    filePrt = fopen("wordslist.txt", "r"); // r for read only
-    if (filePrt == NULL)
+bool loadWords()
+{
+    FILE *file = fopen("wordslist.txt", "r"); // r for read only
+    if (file == NULL)
     {
         printf(RED "Error: could not find or open wordslist.txt.\n" RESET);
-        return;
+        return false;
     }
 
-    while (fgets(buffer, sizeof(buffer), filePrt) != NULL)
+    size_t capacity = 1024;
+    words = malloc(capacity * sizeof *words);
+    if (words == NULL)
     {
-        if (currentLine == targetLine)
-        {
-            buffer[strcspn(buffer, "\n")] = '\0';
-            // printf(YELLOW "DEBUG: Line %d: %s" RESET "\n", targetLine, buffer);
-            strcpy(wordBuffer, buffer);
-            break;
-        }
-        currentLine++;
+        fclose(file);
+        printf(RED "Error: Word List was empty.\n" RESET);
+        return false;
     }
 
-    fclose(filePrt);
+    char line[64];
+    while(fgets(line, sizeof line, file) != NULL)
+    {
+        line[strcspn(line, "\r\n")] = '\0';
+        if (strlen(line) != WORD_LEN)
+            continue;
+        
+        if (wordCount == capacity)
+        {
+            capacity *= 2;
+            void *bigger = realloc(words, capacity * sizeof *words);
+            if (bigger == NULL)
+            {
+                fclose(file);
+                return false;
+            }
+            words = bigger;
+        }
+        strcpy(words[wordCount++], line);
+    }
+
+    fclose(file);
+    return wordCount > 0;
 }
 
 void handleGuess(char *guess, char *word)
@@ -116,13 +143,13 @@ void printGuesses(bool withInvalidMessage)
     clearConsole();
     if (withInvalidMessage)
     {
-        printf("Guess any 5 letter word to start. You get 5 guesses to win. \n\n");
+        printf("Guess any 5 letter word to start. You get 6 guesses to win. \n\n");
         printf(RED "Please guess a valid 5 letter word. \n\n" RESET);
 
     }
     else
     {
-        printf("Guess any 5 letter word to start. You get 5 guesses to win. \n\n\n\n");
+        printf("Guess any 5 letter word to start. You get 6 guesses to win. \n\n\n\n");
     }
 
     for (int i = 0; i < currentGuess; i++)
@@ -159,7 +186,8 @@ void PlayWordle()
 
     srand(time(NULL));
 
-    getWordFromFile(word);
+    loadWords();
+    strcpy(word, words[rand() % wordCount]);
 
     StopSpinner();
     clearConsole();
@@ -175,7 +203,7 @@ void PlayWordle()
     while(true)
     {
         scanf("%s", input);
-        bool isInvalidGuess = strlen(input) != 5;
+        bool isInvalidGuess = strlen(input) != 5 || !isValidWord(input);
         if (isInvalidGuess)
         {
             printGuesses(isInvalidGuess);
@@ -185,7 +213,7 @@ void PlayWordle()
         currentGuess++;
         printGuesses(isInvalidGuess);
 
-        if (!isInvalidGuess && strcmp(word, input) == 0)
+        if (!isInvalidGuess && compareWords(word, input) == 0)
         {
             printf(GREEN "You win in %d %s!\n" RESET, currentGuess, currentGuess == 1 ? "guess" : "guesses");
             break;

@@ -177,7 +177,7 @@ void printGuesses(bool withInvalidMessage)
 void PlayWordle()
 {
     StartSpinner();
-    char input[6] = "";
+    char input[64] = "";
     char word[6] = "";
 
     #ifdef _WIN32
@@ -209,7 +209,16 @@ void PlayWordle()
 
     while(true)
     {
-        scanf("%s", input);
+        if (fgets(input, sizeof input, stdin) == NULL)
+            break;
+
+        if (strchr(input, '\n') == NULL)
+        {
+            int ch;
+            while ((ch = getchar()) != '\n' && ch != EOF);
+        }
+        input[strcspn(input, "\r\n")] = '\0';
+
         bool isInvalidGuess = strlen(input) != 5 || !isValidWord(input);
         if (isInvalidGuess)
         {

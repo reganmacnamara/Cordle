@@ -5,8 +5,9 @@ int main()
 {
     PlayWordle();
     
-    printf("\nPress any key to exit.");
-    int c = getchar();
+    printf("\nPress Enter to exit.");
+    fflush(stdout);
+    getchar();
 
     return 0;
 }
